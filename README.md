@@ -1,48 +1,74 @@
 # Universal File Comparison Tool
 
-A fast, zero-dependency Python GUI application built with Tkinter for universal file comparison. Uses SHA-256 cryptographic hashing to reliably verify bit-for-bit file integrity across any format (.cdr, images, docs, audio) and includes text-level diffing.
+A small desktop app that tells you whether two files are exactly the same, for any file type. Pick
+two files and it compares their sizes and SHA-256 hashes for a bit-for-bit verdict; if they differ
+and they are text files, it shows a line-by-line diff of the first differences.
 
-## Features
+- Python 3.8+ with Tkinter; zero external dependencies (`hashlib`, `difflib`, `os`, `tkinter`)
+- Works on any format: documents, images, audio, archives, CorelDRAW `.cdr` and more
+- Reads files in 8 KB chunks, so large files don't need to fit in memory for the hash check
+- Runs fully offline on Windows, macOS and Linux
 
-- **File picker UI** — browse and select any two files to compare
-- **Size check** — reports the size of each file in bytes
-- **SHA-256 hash comparison** — detects exact binary matches, regardless of file type
-- **Text diff** — for `.txt`, `.csv`, `.json`, `.py`, `.md`, `.html`, and `.xml` files (when both files share the same extension), shows a unified line-by-line diff of the first differences
-- **`.cdr` file note** — since CorelDRAW files are binary vector archives that can't be diffed as text, the tool suggests rasterizing them to PNG (e.g. via Inkscape CLI or UniConverter) to compare visual output instead
+## Project layout
 
-## Requirements
+```
+universal-file-comparison-tool/
+├── file_comparer.py     The whole app: Tkinter UI (FileComparerApp) + comparison logic
+└── LICENSE              MIT
+```
 
-- Python 3.8+
-- Tkinter (included with most standard Python installations; on Linux you may need to install it separately, e.g. `sudo apt install python3-tk`)
+### How it works in one paragraph
 
-No external dependencies — the app only uses Python's standard library (`hashlib`, `os`, `tkinter`, `difflib`).
+`compare_files()` runs three checks in order. First it reports both file sizes. Then it computes a
+SHA-256 hash of each file's full contents; identical hashes mean the files are 100% identical and it
+stops there. If the hashes differ and both files share a supported text extension, it reads them as
+UTF-8 and runs `difflib.unified_diff`, showing the first 15 lines of the diff output. For `.cdr`
+files it explains how to compare them visually instead.
+
+## Comparison rules
+
+| Situation | Result |
+|---|---|
+| Any two files | Size of each file in bytes |
+| SHA-256 hashes match | **EXACT BINARY MATCHES (100% identical)** |
+| Hashes differ | **DIFFERENT at the binary level** |
+| Hashes differ, both files `.txt` `.csv` `.json` `.py` `.md` `.html` or `.xml` with the same extension | Unified diff, first 15 lines |
+| Hashes differ, text content still identical (e.g. line endings, encoding) | "Text content is identical despite structural differences" |
+| Either file is `.cdr` | Note: rasterize to PNG (Inkscape CLI or UniConverter) and compare the images |
+| Other binary formats | Hash verdict only |
+
+## Setup
+
+Requirements: Python 3.8 or newer with Tkinter. Tkinter ships with the python.org installers for
+Windows and macOS; on Debian / Ubuntu install it with:
+
+```bash
+sudo apt install python3-tk
+```
+
+```bash
+git clone https://github.com/mdimasprasetyo/universal-file-comparison-tool.git
+cd universal-file-comparison-tool
+```
 
 ## Usage
 
 ```bash
-python file_comparer.py
+python file_comparer.py      # or python3 on macOS / Linux
 ```
 
-1. Click **Browse...** under **File 1** and select the first file.
-2. Click **Browse...** under **File 2** and select the second file.
+1. Click **Browse...** under **File 1** and pick the first file.
+2. Click **Browse...** under **File 2** and pick the second file.
 3. Click **Compare Files**.
-4. Read the results in the **Analysis Output** panel:
-   - File sizes for both files
-   - Whether the files are exact binary matches (via SHA-256 hash)
-   - If different, a line-by-line diff (for supported text file types) or a note on how to compare `.cdr` files
-
-## How it works
-
-1. **Size check** — compares file sizes for a quick sanity check.
-2. **Hash check** — computes a SHA-256 hash of each file's full contents. Matching hashes mean the files are 100% identical at the binary level.
-3. **Text diff (if applicable)** — if the hashes differ and both files share a supported text extension, the tool reads them as UTF-8 text and runs Python's `difflib.unified_diff` to show the first 15 lines of differences.
+4. Read the verdict in the **Analysis Output** panel: sizes, the hash verdict, and a diff or a note
+   when the files differ.
 
 ## Limitations
 
-- Text diff only runs when both files share the same, supported extension.
-- Non-text binary formats (other than `.cdr`, which gets a specific note) will only get the hash-based identical/different verdict — no detailed diff.
-- Large text files are only diffed for their first 15 differing lines in the output.
+- The text diff only runs when both files have the same supported extension.
+- Only the first 15 lines of the diff output are shown.
+- Binary formats other than `.cdr` get the identical / different verdict only, with no detail.
 
 ## License
 
-Feel free to use, modify, and distribute this project as you see fit. Consider adding a license file (e.g. MIT) if you plan to open source it.
+[MIT](LICENSE) © 2026 Muhammad D. Prasetyo
